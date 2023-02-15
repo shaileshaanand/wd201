@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 p-5">
+    <main
+      class="bg-white w-[500px] mx-auto py-3 px-10 rounded-lg shadow-lg border-2 border-gray-200"
+    >
+      <h1 class="text-3xl font-bold text-center mb-5">Registration Form</h1>
+      <form id="form">
+        <div class="flex gap-6 justify-between items-center py-3">
+          <label for="name" class="font-semibold">Name</label>
+          <input
+            type="text"
+            name="name"
+            id="name"
+            placeholder="Enter Full Name"
+            required
+            class="p-3 bg-gray-200 rounded-lg shadow-md placeholder:text-gray-600 w-64"
+          />
+        </div>
+        <div class="flex justify-between items-center py-3">
+          <label for="email" class="font-semibold">Email</label>
+          <input
+            type="email"
+            name="email"
+            id="email"
+            placeholder="Enter Email"
+            required
+            class="p-3 bg-gray-200 rounded-lg shadow-md placeholder:text-gray-600 w-64"
+          />
+        </div>
+        <div class="flex justify-between items-center py-3">
+          <label for="password" class="font-semibold">Password</label>
+          <input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="Enter Password"
+            required
+            class="p-3 bg-gray-200 rounded-lg shadow-md placeholder:text-gray-600 w-64"
+          />
+        </div>
+        <div class="flex justify-between items-center py-3">
+          <label for="dob" class="font-semibold">Date of Birth</label>
+          <input
+            type="date"
+            name="dob"
+            id="dob"
+            required
+            class="p-3 bg-gray-200 rounded-lg shadow-md placeholder:text-gray-600 w-64"
+          />
+        </div>
+        <div class="font-semibold py-2">
+          <input
+            type="checkbox"
+            name="accepted"
+            id="accepted"
+            class="shadow"
+            required
+          /><label for="accepted"> Accept Terms & Conditions </label>
+        </div>
+        <input
+          type="submit"
+          value="Submit"
+          class="bg-green-500 text-white px-8 py-4 rounded-lg font-semibold mt-2 mb-4"
+        />
+      </form>
+    </main>
+    <section
+      class="bg-white mx-auto py-3 px-10 rounded-lg shadow-lg border-2 border-gray-200 my-6"
+    >
+      <h2 class="text-3xl font-bold text-center mb-5">Entries</h2>
+      <table class="table-auto border-gray-300">
+        <thead>
+          <tr>
+            <th class="px-5 py-1">Name</th>
+            <th class="px-5 py-1">Email</th>
+            <th class="px-5 py-1">Password</th>
+            <th class="px-5 py-1">dob</th>
+            <th class="px-5 py-1">accepted terms?</th>
+          </tr>
+        </thead>
+        <tbody id="entries"></tbody>
+      </table>
+    </section>
+    <script>
+      const minDate = new Date(new Date() - 86400000 * 365 * 55);
+      const maxDate = new Date(new Date() - 86400000 * 365 * 18);
+      const dob = document.getElementById("dob");
+      dob.setAttribute("min", minDate.toISOString().slice(0, 10));
+      dob.setAttribute("max", maxDate.toISOString().slice(0, 10));
+      //   const entries = JSON.parse(localStorage.getItem("entries")) || [];
+      const form = document.getElementById("form");
+      const refreshEntries = () =>
+        (document.getElementById("entries").innerHTML = JSON.parse(
+          localStorage.getItem("entries") || "[]"
+        )
+          .map(
+            (entry) => `<tr >
+                <td class="border-2 text-center py-1 px-5">${entry.name}</td>
+                <td class="border-2 text-center py-1 px-5">${entry.email}</td>
+                <td class="border-2 text-center py-1 px-5">${entry.password}</td>
+                <td class="border-2 text-center py-1 px-5">${entry.dob}</td>
+                <td class="border-2 text-center py-1 px-5">${entry.accepted}</td>
+                </tr>`
+          )
+          .join("\n"));
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        localStorage.setItem(
+          "entries",
+          JSON.stringify([
+            ...JSON.parse(localStorage.getItem("entries") || "[]"),
+            {
+              name: document.getElementById("name").value,
+              email: document.getElementById("email").value,
+              password: document.getElementById("password").value,
+              dob: document.getElementById("dob").value,
+              accepted:
+                document.getElementById("accepted").value === "on"
+                  ? true
+                  : false,
+            },
+          ])
+        );
+        refreshEntries();
+      });
+      refreshEntries();
+    </script>
+  </body>
+</html>
