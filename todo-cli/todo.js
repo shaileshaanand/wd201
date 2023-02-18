@@ -1,5 +1,5 @@
 const todoList = () => {
-  all = [];
+  const all = [];
   const add = (todoItem) => {
     all.push(todoItem);
   };
@@ -97,3 +97,5 @@ console.log("Due Later");
 let itemsDueLater = todos.dueLater();
 let formattedItemsDueLater = todos.toDisplayableList(itemsDueLater);
 console.log(formattedItemsDueLater);
+
+module.exports = todoList;
