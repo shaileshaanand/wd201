@@ -49,12 +49,12 @@ describe("TodoList Test Suite", () => {
     addTodo({
       dueDate: new Date(
         new Date().setDate(new Date().getDate() - 1)
-      ).toLocaleDateString("en-CA"),
+      ).toISOString(),
     });
     add({
       title: "new todo",
       completed: false,
-      dueDate: new Date().toLocaleDateString("en-CA"),
+      dueDate: new Date().toISOString(),
     });
     expect(all.length).toBe(2);
     expect(dueToday().length).toBe(1);
