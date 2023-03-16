@@ -6,7 +6,8 @@
   "scripts": {
     "start": "nodemon -e js,ejs index.js",
     "test": "jest",
-    "prepare": "cd .. && husky install todo-app/.husky"
+    "prepare": "cd .. && husky install todo-app/.husky",
+    "prod": "NODE_ENV=production node ndex.js"
   },
   "keywords": [],
   "author": "",
