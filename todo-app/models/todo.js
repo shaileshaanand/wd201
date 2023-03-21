@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       return await Todo.findAll({
         where: {
           dueDate: { [Op.gt]: new Date() },
+          completed: false,
         },
         order: [
           ["dueDate", "ASC"],
@@ -28,6 +29,7 @@ module.exports = (sequelize, DataTypes) => {
       return await Todo.findAll({
         where: {
           dueDate: { [Op.eq]: new Date() },
+          completed: false,
         },
         order: [
           ["dueDate", "ASC"],
@@ -39,6 +41,19 @@ module.exports = (sequelize, DataTypes) => {
       return await Todo.findAll({
         where: {
           dueDate: { [Op.lt]: new Date() },
+          completed: false,
+        },
+        order: [
+          ["dueDate", "ASC"],
+          ["title", "ASC"],
+        ],
+      });
+    }
+
+    static async completed() {
+      return await Todo.findAll({
+        where: {
+          completed: true,
         },
         order: [
           ["dueDate", "ASC"],

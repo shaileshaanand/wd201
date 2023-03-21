@@ -12,15 +12,17 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", async (request, response) => {
   if (request.accepts("html")) {
-    const [dueLater, dueToday, overdue] = await Promise.all([
+    const [dueLater, dueToday, overdue, completed] = await Promise.all([
       Todo.dueLater(),
       Todo.dueToday(),
       Todo.overdue(),
+      Todo.completed(),
     ]);
     response.render("index", {
       dueLater,
       dueToday,
       overdue,
+      completed,
     });
   } else {
     const todos = await Todo.getTodos();
