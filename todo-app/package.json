@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon -e js,ejs index.js",
-    "test": "jest",
+    "test": " NODE_ENV=test jest",
     "prepare": "cd .. && husky install todo-app/.husky",
     "prod": "NODE_ENV=production node index.js"
   },
