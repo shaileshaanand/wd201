@@ -1,9 +1,31 @@
-<table>
-  <% for (let i=0;i<todos.length;i++) { %>
-  <tr>
-    <td>
-      <%= todos[i].title %>
-    </td>
-  </tr>
-  <% } %>
-</table>
+<div>
+  <div class="flex">
+    <h5 class="text-xl">Overdue</h5>
+    <div class="bg-gray-200 px-2.5 py-0.5 rounded text-base ml-2" id="count-overdue"><%= overdue.length %></div>
+  </div>
+  <ul class="list-none">
+    <% for (let i=0;i<overdue.length;i++) { %>
+    <%- include("todo.ejs",{todo :overdue[i]}) %>
+    <% } %>
+  </ul>
+  <div class="flex">
+    <h5 class="text-xl">Due Today</h5>
+    <div class="bg-gray-200 px-2.5 py-0.5 rounded text-base ml-2" id="count-due-today"><%= dueToday.length %></div>
+  </div>
+  <ul class="list-none">
+    <% for (let i=0;i<dueToday.length;i++) { %>
+    <%- include("todo.ejs",{todo : dueToday[i]}) %>
+    <% } %>
+  </ul>
+
+  <div class="flex">
+    <h5 class="text-xl">Due Later</h5>
+    <div class="bg-gray-200 px-2.5 py-0.5 rounded text-base ml-2" id="count-due-later"><%= dueLater.length %></div>
+  </div>
+  <ul class="list-none">
+    <% for (let i=0;i<dueLater.length;i++) { %>
+    <%- include("todo.ejs",{todo : dueLater[i]}) %>
+    <% } %>
+  </ul>
+
+</div>

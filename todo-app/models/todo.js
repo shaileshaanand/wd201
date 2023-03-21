@@ -1,5 +1,5 @@
 "use strict";
-const { Model } = require("sequelize");
+const { Model, Op } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Todo extends Model {
     /**
@@ -12,12 +12,67 @@ module.exports = (sequelize, DataTypes) => {
       return this.create({ title: title, dueDate: dueDate, completed: false });
     }
 
-    static getTodos() {
-      return this.findAll();
+    static async dueLater() {
+      return await Todo.findAll({
+        where: {
+          dueDate: { [Op.gt]: new Date() },
+        },
+        order: [
+          ["dueDate", "ASC"],
+          ["title", "ASC"],
+        ],
+      });
     }
 
-    markAsCompleted() {
-      return this.update({ completed: true });
+    static async dueToday() {
+      return await Todo.findAll({
+        where: {
+          dueDate: { [Op.eq]: new Date() },
+        },
+        order: [
+          ["dueDate", "ASC"],
+          ["title", "ASC"],
+        ],
+      });
+    }
+    static async overdue() {
+      return await Todo.findAll({
+        where: {
+          dueDate: { [Op.lt]: new Date() },
+        },
+        order: [
+          ["dueDate", "ASC"],
+          ["title", "ASC"],
+        ],
+      });
+    }
+
+    static setCompletionStatus(id, status) {
+      return Todo.update(
+        { completed: status },
+        {
+          where: {
+            id: id,
+          },
+        }
+      );
+    }
+
+    static delete(id) {
+      return this.destroy({
+        where: {
+          id,
+        },
+      });
+    }
+
+    displayableString() {
+      let checkbox = this.completed ? "[x]" : "[ ]";
+      return `${this.id}. ${checkbox} ${this.title} ${
+        this.dueDate.toString() === new Date().toISOString().slice(0, 10)
+          ? ""
+          : this.dueDate
+      }`.trim();
     }
   }
   Todo.init(
