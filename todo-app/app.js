@@ -2,13 +2,25 @@ const express = require("express");
 const app = express();
 const { Todo } = require("./models");
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 const path = require("path");
+const { doubleCsrf } = require("csrf-csrf");
 
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
+app.use(cookieParser("C$JxqKA!DexWci^%RVno$Kx*J@9MYpi9"));
+
+const { generateToken, doubleCsrfProtection } = doubleCsrf({
+  getSecret: () => "Vz!XsBA&Mut6h8oiSn6JmfVzV&G7gPtp",
+  getTokenFromRequest: (req) => {
+    return req.body._csrf;
+  },
+});
+
+app.use(doubleCsrfProtection);
 
 app.get("/", async (request, response) => {
   if (request.accepts("html")) {
@@ -23,6 +35,7 @@ app.get("/", async (request, response) => {
       dueToday,
       overdue,
       completed,
+      csrfToken: generateToken(response),
     });
   } else {
     const todos = await Todo.getTodos();

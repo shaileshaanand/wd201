@@ -15,7 +15,8 @@
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          completed
+          completed,
+          _csrf: "<%= csrfToken %>"
         })
       }).then((res) => {
         if (res.ok) {
@@ -30,7 +31,10 @@
         method: "delete",
         headers: {
           "Content-Type": "application/json"
-        }
+        },
+        body: JSON.stringify({
+          _csrf: "<%= csrfToken %>"
+        })
       }).then((res) => {
         if (res.ok) {
           window.location.reload()
@@ -48,6 +52,7 @@
       <%- include('header.ejs') %>
       <form method="post" action="/todos">
         <div class="flex gap-2 py-4">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <div class="flex-auto"><input required type="text" name="title" placeholder="What's next?" class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"></div>
           <div class="flex-auto"><input required type="date" name="dueDate" class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm leading-4"></div>
           <div class="flex-none">
