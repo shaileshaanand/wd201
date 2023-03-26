@@ -1,6 +1,5 @@
 const supertest = require("supertest");
 const cheerio = require("cheerio");
-const { faker } = require("@faker-js/faker");
 
 const db = require("../models/index");
 const { Todo } = require("../models");
@@ -10,13 +9,25 @@ let _csrf, csrfCookie;
 
 const today = () => new Date().toISOString().split("T")[0];
 
-const makeTodo = async ({
-  title = null,
-  dueDate = null,
-  completed = false,
-} = {}) => {
+const randInt = (low, high) => {
+  return Math.floor(Math.random() * (high - low)) + low;
+};
+
+const randomPastDate = () => {
+  return new Date(new Date().setDate(new Date().getDate() - randInt(0, 200)))
+    .toISOString()
+    .split("T")[0];
+};
+
+const randomFutureDate = () => {
+  return new Date(new Date().setDate(new Date().getDate() + randInt(1, 200)))
+    .toISOString()
+    .split("T")[0];
+};
+
+const makeTodo = async ({ title, dueDate = null, completed = false }) => {
   return await Todo.addTodo({
-    title: title || faker.lorem.words(3),
+    title: title,
     dueDate: dueDate || today(),
     completed,
   });
@@ -40,6 +51,7 @@ describe("Todo Application", function () {
 
   afterAll(async () => {
     try {
+      await db.sequelize.sync({ force: true });
       await db.sequelize.close();
     } catch (error) {
       console.log(error);
@@ -48,10 +60,14 @@ describe("Todo Application", function () {
 
   it("Should list overdue Todos", async () => {
     const [todo1, todo2, todo3, todo4] = await Promise.all([
-      makeTodo({ dueDate: faker.date.past() }),
-      makeTodo({ dueDate: faker.date.future() }),
-      makeTodo(),
-      makeTodo({ dueDate: faker.date.past(), completed: true }),
+      makeTodo({ title: "Buy Milk", dueDate: randomPastDate() }),
+      makeTodo({ title: "Wash Clothes", dueDate: randomFutureDate() }),
+      makeTodo({ title: "Pay bill" }),
+      makeTodo({
+        title: "Clean House",
+        dueDate: randomPastDate(),
+        completed: true,
+      }),
     ]);
     const homepage = cheerio.load((await client.get("/")).text);
     const overdueTodosList = homepage("#overdueTodos").text();
@@ -65,10 +81,10 @@ describe("Todo Application", function () {
 
   it("Should list Todos due today", async () => {
     const [todo1, todo2, todo3, todo4] = await Promise.all([
-      makeTodo(),
-      makeTodo({ dueDate: faker.date.future() }),
-      makeTodo({ dueDate: faker.date.past() }),
-      makeTodo({ completed: true }),
+      makeTodo({ title: "Buy Milk" }),
+      makeTodo({ title: "Buy House", dueDate: randomFutureDate() }),
+      makeTodo({ title: "Wash Clothes", dueDate: randomPastDate() }),
+      makeTodo({ title: "Sleep", completed: true }),
     ]);
     const homepage = cheerio.load((await client.get("/")).text);
     const dueTodayTodoList = homepage("#dueTodayTodos").text();
@@ -82,10 +98,14 @@ describe("Todo Application", function () {
 
   it("Should list Todos due later", async () => {
     const [todo1, todo2, todo3, todo4] = await Promise.all([
-      makeTodo({ dueDate: faker.date.future() }),
-      makeTodo(),
-      makeTodo({ dueDate: faker.date.past() }),
-      makeTodo({ dueDate: faker.date.future(), completed: true }),
+      makeTodo({ title: "Wash Clothes", dueDate: randomFutureDate() }),
+      makeTodo({ title: "Buy Clothes" }),
+      makeTodo({ title: "Pay Bills", dueDate: randomPastDate() }),
+      makeTodo({
+        title: "Repair car",
+        dueDate: randomFutureDate(),
+        completed: true,
+      }),
     ]);
     const homepage = cheerio.load((await client.get("/")).text);
     const dueLaterTodoList = homepage("#dueLaterTodos").text();
@@ -99,10 +119,14 @@ describe("Todo Application", function () {
 
   it("Should list completed Todos", async () => {
     const [todo1, todo2, todo3, todo4] = await Promise.all([
-      makeTodo({ dueDate: faker.date.future(), completed: true }),
-      makeTodo(),
-      makeTodo({ dueDate: faker.date.past() }),
-      makeTodo({ dueDate: faker.date.future() }),
+      makeTodo({
+        title: "Sleep",
+        dueDate: randomFutureDate(),
+        completed: true,
+      }),
+      makeTodo({ title: "Buy Clothes" }),
+      makeTodo({ title: "Wake Up", dueDate: randomPastDate() }),
+      makeTodo({ title: "Code", dueDate: randomFutureDate() }),
     ]);
     const homepage = cheerio.load((await client.get("/")).text);
     const completedTodoList = homepage("#completedTodos").text();
@@ -116,10 +140,14 @@ describe("Todo Application", function () {
 
   it("Should return all todos in json format", async () => {
     const todoList = await Promise.all([
-      makeTodo({ dueDate: faker.date.future(), completed: true }),
-      makeTodo(),
-      makeTodo({ dueDate: faker.date.past() }),
-      makeTodo({ dueDate: faker.date.future() }),
+      makeTodo({
+        title: "Turn on the light",
+        dueDate: randomFutureDate(),
+        completed: true,
+      }),
+      makeTodo({ title: "Buy Clothes" }),
+      makeTodo({ title: "Play piano", dueDate: randomPastDate() }),
+      makeTodo({ title: "Goto gym", dueDate: randomFutureDate() }),
     ]);
     const response = await client.get("/todos");
     expect(response.status).toBe(200);
@@ -137,7 +165,7 @@ describe("Todo Application", function () {
   });
 
   it("Should return a todo by id", async () => {
-    const todoInstance = await makeTodo();
+    const todoInstance = await makeTodo({ title: "Buy Clothes" });
 
     const response = await client.get(`/todos/${todoInstance.id}`);
 
@@ -150,8 +178,8 @@ describe("Todo Application", function () {
 
   it("Should not create a new todo using POST request without csrf token", async () => {
     const payload = {
-      title: faker.lorem.words(3),
-      dueDate: faker.date.recent(),
+      title: "Watch Movie",
+      dueDate: randomFutureDate(),
     };
     const response = await client.post("/todos").send(payload);
     expect(response.status).toBe(403);
@@ -159,8 +187,8 @@ describe("Todo Application", function () {
 
   it("Should create a new todo using POST request", async () => {
     const payload = {
-      title: faker.lorem.words(3),
-      dueDate: faker.date.recent().toISOString().split("T")[0],
+      title: "Goto Park",
+      dueDate: randomPastDate(),
       _csrf,
     };
     const response = await client
@@ -177,7 +205,7 @@ describe("Todo Application", function () {
   });
 
   it("Should not a mark todo as complete without csrf token", async () => {
-    const todo = await makeTodo();
+    const todo = await makeTodo({ title: "Buy Clothes" });
     expect(todo.completed).toBe(false);
 
     const response = await client
@@ -190,7 +218,7 @@ describe("Todo Application", function () {
   });
 
   it("Should mark a todo as complete", async () => {
-    const todo = await makeTodo();
+    const todo = await makeTodo({ title: "Buy Clothes" });
     expect(todo.completed).toBe(false);
 
     const response = await client
@@ -204,7 +232,7 @@ describe("Todo Application", function () {
   });
 
   it("Should not delete a todo without csrf token", async () => {
-    const todo = await makeTodo();
+    const todo = await makeTodo({ title: "Buy Clothes" });
     const response = await client.delete(`/todos/${todo.id}`).send();
 
     expect(response.status).toBe(403);
@@ -213,7 +241,7 @@ describe("Todo Application", function () {
   });
 
   it("Should delete a todo", async () => {
-    const todo = await makeTodo();
+    const todo = await makeTodo({ title: "Buy Clothes" });
 
     const response = await client
       .delete(`/todos/${todo.id}`)
