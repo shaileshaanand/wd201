@@ -182,7 +182,7 @@ describe("Todo Application", function () {
       dueDate: randomFutureDate(),
     };
     const response = await client.post("/todos").send(payload);
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(500);
   });
 
   it("Should create a new todo using POST request", async () => {
@@ -211,8 +211,7 @@ describe("Todo Application", function () {
     const response = await client
       .put(`/todos/${todo.id}`)
       .send({ completed: true });
-
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(500);
     await todo.reload();
     expect(todo.completed).toBe(false);
   });
@@ -235,7 +234,7 @@ describe("Todo Application", function () {
     const todo = await makeTodo({ title: "Buy Clothes" });
     const response = await client.delete(`/todos/${todo.id}`).send();
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(500);
     await todo.reload();
     expect(todo.id).toBeDefined();
   });

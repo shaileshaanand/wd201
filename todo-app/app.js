@@ -4,7 +4,7 @@ const { Todo } = require("./models");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const path = require("path");
-const { doubleCsrf } = require("csrf-csrf");
+const tinycsrf = require("tiny-csrf");
 
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
@@ -13,14 +13,9 @@ app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cookieParser("C$JxqKA!DexWci^%RVno$Kx*J@9MYpi9"));
 
-const { generateToken, doubleCsrfProtection } = doubleCsrf({
-  getSecret: () => "Vz!XsBA&Mut6h8oiSn6JmfVzV&G7gPtp",
-  getTokenFromRequest: (req) => {
-    return req.body._csrf;
-  },
-});
-
-app.use(doubleCsrfProtection);
+app.use(
+  tinycsrf("oiwdcdvjvoirejfryoeoreureoiitsfr", ["POST", "PUT", "DELETE"])
+);
 
 app.get("/", async (request, response) => {
   if (request.accepts("html")) {
@@ -35,7 +30,7 @@ app.get("/", async (request, response) => {
       dueToday,
       overdue,
       completed,
-      csrfToken: generateToken(response),
+      csrfToken: request.csrfToken(),
     });
   } else {
     const todos = await Todo.getTodos();
