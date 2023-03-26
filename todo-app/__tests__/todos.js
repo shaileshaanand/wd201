@@ -26,6 +26,7 @@ const client = supertest(app);
 
 describe("Todo Application", function () {
   beforeAll(async () => {
+    await db.sequelize.sync({ force: true });
     const homeResp = await client.get("/");
     const homepage = cheerio.load(homeResp.text);
     csrfCookie = homeResp.headers["set-cookie"][0];
