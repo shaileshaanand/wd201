@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/home/node/app
+      - /home/node/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - DEV_DB_URL=postgres://postgres:postgres@db:5432/postgres
+      - TEST_DB_URL=postgres://postgres:postgres@db_test:5432/postgres
+    depends_on:
+      - db
+      - db_test
+  
+  db:
+    image: postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+  
+  db_test:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+
+volumes:
+  db_data:
