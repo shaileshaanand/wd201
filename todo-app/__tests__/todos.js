@@ -230,6 +230,35 @@ describe("Todo Application", function () {
     expect(todo.completed).toBe(true);
   });
 
+  it("Should not a mark todo as incomplete without csrf token", async () => {
+    const todo = await makeTodo({ title: "Buy Clothes" });
+    todo.completed = true;
+    await todo.save();
+    expect(todo.completed).toBe(true);
+
+    const response = await client
+      .put(`/todos/${todo.id}`)
+      .send({ completed: true });
+    expect(response.status).toBe(500);
+    await todo.reload();
+    expect(todo.completed).toBe(true);
+  });
+
+  it("Should mark a todo as incomplete", async () => {
+    const todo = await makeTodo({ title: "Buy Clothes" });
+    todo.completed = true;
+    await todo.save();
+    expect(todo.completed).toBe(true);
+
+    const response = await client
+      .put(`/todos/${todo.id}`)
+      .set("Cookie", csrfCookie)
+      .send({ completed: false, _csrf });
+
+    expect(response.status).toBe(200);
+    await todo.reload();
+    expect(todo.completed).toBe(false);
+  });
   it("Should not delete a todo without csrf token", async () => {
     const todo = await makeTodo({ title: "Buy Clothes" });
     const response = await client.delete(`/todos/${todo.id}`).send();
