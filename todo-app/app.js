@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const { Todo } = require("./models");
+const { Todo, User } = require("./models");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const path = require("path");
@@ -84,6 +84,20 @@ app.delete("/todos/:id", async function (request, response) {
     where: { id: request.params.id },
   });
   response.send(deletedResultsCount === 1);
+});
+
+app.get("/signup", (request, response) =>
+  response.render("signup", { csrfToken: request.csrfToken() })
+);
+
+app.post("/users", async (request, response) => {
+  const { firstName, lastName, email, password } = request.body;
+  try {
+    const user = User.create({ firstName, lastName, email, password });
+  } catch (error) {
+    console.error(error);
+  }
+  response.redirect("/");
 });
 
 module.exports = app;
