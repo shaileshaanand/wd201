@@ -102,53 +102,83 @@ app.get(
   }
 );
 
-app.get("/todos", async function (_, response) {
-  const todos = await Todo.findAll();
-  response.send(todos);
-});
+app.get(
+  "/todos",
+  connectEnsureLogin.ensureLoggedIn({
+    redirectTo: "/login",
+  }),
+  async function (_, response) {
+    const todos = await Todo.findAll();
+    response.send(todos);
+  }
+);
 
-app.get("/todos/:id", async function (request, response) {
-  try {
-    const todo = await Todo.findByPk(request.params.id);
-    if (todo) {
-      return response.json(todo);
+app.get(
+  "/todos/:id",
+  connectEnsureLogin.ensureLoggedIn({
+    redirectTo: "/login",
+  }),
+  async function (request, response) {
+    try {
+      const todo = await Todo.findByPk(request.params.id);
+      if (todo) {
+        return response.json(todo);
+      }
+      return response.status(404).send();
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
     }
-    return response.status(404).send();
-  } catch (error) {
-    console.log(error);
-    return response.status(422).json(error);
   }
-});
+);
 
-app.post("/todos", async function (request, response) {
-  try {
-    await Todo.addTodo(request.body);
-    return response.redirect("/");
-  } catch (error) {
-    console.log(error);
-    return response.status(422).send();
+app.post(
+  "/todos",
+  connectEnsureLogin.ensureLoggedIn({
+    redirectTo: "/login",
+  }),
+  async function (request, response) {
+    try {
+      await Todo.addTodo(request.body);
+      return response.redirect("/");
+    } catch (error) {
+      console.log(error);
+      return response.status(422).send();
+    }
   }
-});
+);
 
-app.put("/todos/:id/", async function (request, response) {
-  try {
-    const affectedCount = await Todo.setCompletionStatus(
-      request.params.id,
-      request.body.completed
-    );
-    return response.json(affectedCount === 1);
-  } catch (error) {
-    console.log(error);
-    return response.status(422).json(error);
+app.put(
+  "/todos/:id/",
+  connectEnsureLogin.ensureLoggedIn({
+    redirectTo: "/login",
+  }),
+  async function (request, response) {
+    try {
+      const affectedCount = await Todo.setCompletionStatus(
+        request.params.id,
+        request.body.completed
+      );
+      return response.json(affectedCount === 1);
+    } catch (error) {
+      console.log(error);
+      return response.status(422).json(error);
+    }
   }
-});
+);
 
-app.delete("/todos/:id", async function (request, response) {
-  const deletedResultsCount = await Todo.destroy({
-    where: { id: request.params.id },
-  });
-  response.send(deletedResultsCount === 1);
-});
+app.delete(
+  "/todos/:id",
+  connectEnsureLogin.ensureLoggedIn({
+    redirectTo: "/login",
+  }),
+  async function (request, response) {
+    const deletedResultsCount = await Todo.destroy({
+      where: { id: request.params.id },
+    });
+    response.send(deletedResultsCount === 1);
+  }
+);
 
 app.get("/signup", (request, response) =>
   response.render("signup", { csrfToken: request.csrfToken() })
@@ -186,13 +216,19 @@ app.post(
   }
 );
 
-app.get("/signout", (request, response, next) => {
-  request.logout(null, (err) => {
-    if (err) {
-      next(err);
-    } else {
-      response.redirect("/");
-    }
-  });
-});
+app.get(
+  "/signout",
+  connectEnsureLogin.ensureLoggedIn({
+    redirectTo: "/login",
+  }),
+  (request, response, next) => {
+    request.logout(null, (err) => {
+      if (err) {
+        next(err);
+      } else {
+        response.redirect("/");
+      }
+    });
+  }
+);
 module.exports = app;
