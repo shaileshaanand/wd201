@@ -19,7 +19,7 @@ services:
       - db_test
   
   db:
-    image: postgres
+    image: postgres:alpine
     volumes:
       - db_data:/var/lib/postgresql/data
     environment:
@@ -28,7 +28,7 @@ services:
       - POSTGRES_DB=postgres
   
   db_test:
-    image: postgres
+    image: postgres:alpine
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
