@@ -10,6 +10,9 @@ const passport = require("passport");
 const connectEnsureLogin = require("connect-ensure-login");
 const session = require("express-session");
 const LocalStrategy = require("passport-local");
+const bcrypt = require("bcrypt");
+
+const SALT_ROUNDS = 10;
 
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
@@ -38,9 +41,13 @@ passport.use(
       passwordField: "password",
     },
     (email, password, done) => {
-      User.findOne({ where: { email, password } })
-        .then((user) => {
-          return done(null, user);
+      User.findOne({ where: { email } })
+        .then(async (user) => {
+          console.log("before bcrypt", { user });
+          if (await bcrypt.compare(password, user.password)) {
+            return done(null, user);
+          }
+          return done("Invalid password");
         })
         .catch((error) => {
           return error;
@@ -150,7 +157,12 @@ app.get("/signup", (request, response) =>
 app.post("/users", async (request, response) => {
   const { firstName, lastName, email, password } = request.body;
   try {
-    const user = await User.create({ firstName, lastName, email, password });
+    const user = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: await bcrypt.hash(password, SALT_ROUNDS),
+    });
     request.login(user, (err) => {
       if (err) {
         console.log("error in login", err);
@@ -162,4 +174,15 @@ app.post("/users", async (request, response) => {
   }
 });
 
+app.get("/login", (request, response) => {
+  response.render("login", { csrfToken: request.csrfToken() });
+});
+
+app.post(
+  "/session",
+  passport.authenticate("local", { failureRedirect: "/login" }),
+  (request, response) => {
+    response.redirect("/todos");
+  }
+);
 module.exports = app;
