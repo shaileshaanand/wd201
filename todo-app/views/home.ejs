@@ -50,6 +50,7 @@
   <div class="">
     <div class="w-[700px] mx-auto">
       <%- include('header.ejs') %>
+      <a href="/signout">Signout</a>
       <form method="post" action="/todos">
         <div class="flex gap-2 py-4">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">

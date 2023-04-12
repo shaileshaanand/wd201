@@ -185,4 +185,14 @@ app.post(
     response.redirect("/todos");
   }
 );
+
+app.get("/signout", (request, response, next) => {
+  request.logout(null, (err) => {
+    if (err) {
+      next(err);
+    } else {
+      response.redirect("/");
+    }
+  });
+});
 module.exports = app;
