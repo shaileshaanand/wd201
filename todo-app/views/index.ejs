@@ -7,60 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <title>Todo App</title>
-  <script>
-    const updateTodo = async (todoId, completed) => {
-      fetch(`/todos/${todoId}/`, {
-        method: "put",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          completed,
-          _csrf: "<%= csrfToken %>"
-        })
-      }).then((res) => {
-        if (res.ok) {
-          window.location.reload()
-        }
-      }).catch((err) =>
-        console.log(err)
-      )
-    };
-    const deleteTodo = async (todoId) => {
-      fetch(`/todos/${todoId}`, {
-        method: "delete",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          _csrf: "<%= csrfToken %>"
-        })
-      }).then((res) => {
-        if (res.ok) {
-          window.location.reload()
-        }
-      }).catch((err) =>
-        console.log(err)
-      )
-    }
-  </script>
 </head>
 
 <body>
   <div class="">
     <div class="w-[700px] mx-auto">
       <%- include('header.ejs') %>
-      <form method="post" action="/todos">
-        <div class="flex gap-2 py-4">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <div class="flex-auto"><input required type="text" name="title" placeholder="What's next?" class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm"></div>
-          <div class="flex-auto"><input required type="date" name="dueDate" class="border border-gray-300 text-gray-900 w-full rounded p-2 text-sm leading-4"></div>
-          <div class="flex-none">
-            <button type="submit" class="bg-green-600 text-white px-5 py-1.5 rounded font-medium mr-2">Add</button>
-          </div>
-        </div>
-      </form>
-      <%- include("todos.ejs") %>
+      <p class="py-2">Welcome to the To-do manager</p>
+      <p class="py-2">New Here? <a href="/signup" class="text-green-600">Sign-up</a></p>
+      <p class="py-2">Already have an account? <a href="/login" class="text-green-600">Sign-in</a></p>
     </div>
   </div>
 

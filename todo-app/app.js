@@ -6,6 +6,11 @@ const cookieParser = require("cookie-parser");
 const path = require("path");
 const tinycsrf = require("tiny-csrf");
 
+const passport = require("passport");
+const connectEnsureLogin = require("connect-ensure-login");
+const session = require("express-session");
+const LocalStrategy = require("passport-local");
+
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -17,26 +22,78 @@ app.use(
   tinycsrf("oiwdcdvjvoirejfryoeoreureoiitsfr", ["POST", "PUT", "DELETE"])
 );
 
-app.get("/", async (request, response) => {
-  if (request.accepts("html")) {
-    const [dueLater, dueToday, overdue, completed] = await Promise.all([
-      Todo.dueLater(),
-      Todo.dueToday(),
-      Todo.overdue(),
-      Todo.completed(),
-    ]);
-    response.render("index", {
-      dueLater,
-      dueToday,
-      overdue,
-      completed,
-      csrfToken: request.csrfToken(),
-    });
-  } else {
-    const todos = await Todo.getTodos();
-    response.json(todos);
-  }
+app.use(
+  session({
+    secret: "18AB2617E6FF89A93CCE4ADEB53F3",
+    cookie: { maxAge: 24 * 60 * 60 * 1000 },
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(
+  new LocalStrategy(
+    {
+      usernameField: "email",
+      passwordField: "password",
+    },
+    (email, password, done) => {
+      User.findOne({ where: { email, password } })
+        .then((user) => {
+          return done(null, user);
+        })
+        .catch((error) => {
+          return error;
+        });
+    }
+  )
+);
+
+passport.serializeUser((user, done) => {
+  console.log("Serializing user in session", user.id);
+  done(null, user.id);
 });
+
+passport.deserializeUser((id, done) => {
+  User.findByPk(id)
+    .then((user) => {
+      done(null, user);
+    })
+    .catch((error) => {
+      done(error, null);
+    });
+});
+
+app.get("/", (request, response) => {
+  response.render("index");
+});
+
+app.get(
+  "/todos",
+  connectEnsureLogin.ensureLoggedIn({
+    redirectTo: "/login",
+  }),
+  async (request, response) => {
+    if (request.accepts("html")) {
+      const [dueLater, dueToday, overdue, completed] = await Promise.all([
+        Todo.dueLater(),
+        Todo.dueToday(),
+        Todo.overdue(),
+        Todo.completed(),
+      ]);
+      response.render("home", {
+        dueLater,
+        dueToday,
+        overdue,
+        completed,
+        csrfToken: request.csrfToken(),
+      });
+    } else {
+      const todos = await Todo.getTodos();
+      response.json(todos);
+    }
+  }
+);
 
 app.get("/todos", async function (_, response) {
   const todos = await Todo.findAll();
@@ -93,11 +150,16 @@ app.get("/signup", (request, response) =>
 app.post("/users", async (request, response) => {
   const { firstName, lastName, email, password } = request.body;
   try {
-    const user = User.create({ firstName, lastName, email, password });
+    const user = await User.create({ firstName, lastName, email, password });
+    request.login(user, (err) => {
+      if (err) {
+        console.log("error in login", err);
+      }
+      response.redirect("/todos");
+    });
   } catch (error) {
     console.error(error);
   }
-  response.redirect("/");
 });
 
 module.exports = app;
