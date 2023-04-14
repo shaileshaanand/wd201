@@ -43,7 +43,6 @@ passport.use(
     (email, password, done) => {
       User.findOne({ where: { email } })
         .then(async (user) => {
-          console.log("before bcrypt", { user });
           if (await bcrypt.compare(password, user.password)) {
             return done(null, user);
           }
@@ -82,11 +81,12 @@ app.get(
   }),
   async (request, response) => {
     if (request.accepts("html")) {
+      const userId = request.user.id;
       const [dueLater, dueToday, overdue, completed] = await Promise.all([
-        Todo.dueLater(),
-        Todo.dueToday(),
-        Todo.overdue(),
-        Todo.completed(),
+        Todo.dueLater(userId),
+        Todo.dueToday(userId),
+        Todo.overdue(userId),
+        Todo.completed(userId),
       ]);
       response.render("home", {
         dueLater,
@@ -139,8 +139,9 @@ app.post(
   }),
   async function (request, response) {
     try {
-      await Todo.addTodo(request.body);
-      return response.redirect("/");
+      const { title, dueDate } = request.body;
+      await Todo.addTodo({ title, dueDate, userId: request.user.id });
+      return response.redirect("/todos");
     } catch (error) {
       console.log(error);
       return response.status(422).send();
@@ -174,7 +175,7 @@ app.delete(
   }),
   async function (request, response) {
     const deletedResultsCount = await Todo.destroy({
-      where: { id: request.params.id },
+      where: { id: request.params.id, userId: request.user.id },
     });
     response.send(deletedResultsCount === 1);
   }
