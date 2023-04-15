@@ -81,10 +81,14 @@ passport.deserializeUser((id, done) => {
     });
 });
 
-app.get("/", (request, response) => {
+const redirectIfLoggedIn = (request, response, next) => {
   if (request.user) {
     return response.redirect("/todos");
   }
+  next();
+};
+
+app.get("/", redirectIfLoggedIn, (request, response) => {
   return response.render("index");
 });
 
@@ -211,7 +215,7 @@ app.delete(
   }
 );
 
-app.get("/signup", (request, response) =>
+app.get("/signup", redirectIfLoggedIn, (request, response) =>
   response.render("signup", { csrfToken: request.csrfToken() })
 );
 
@@ -253,7 +257,7 @@ app.post("/users", async (request, response) => {
   }
 });
 
-app.get("/login", (request, response) => {
+app.get("/login", redirectIfLoggedIn, (request, response) => {
   response.render("login", { csrfToken: request.csrfToken() });
 });
 

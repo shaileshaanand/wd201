@@ -899,19 +899,22 @@ describe("Todo Application", function () {
     expect(response.headers.location).toBe("/todos");
   });
 
-  it("Should redirect logged in user to /todos", async () => {
-    const [_, loginCookie] = await makeUserAndCookie({
-      firstName: "Jacob",
-      lastName: "Kowalski",
-      email: "jacob@pottermore.com",
-      password: "random",
-    });
+  it.each(["/", "/login", "/signup"])(
+    "Should redirect %s to /todos if logged in",
+    async (path) => {
+      const [_, loginCookie] = await makeUserAndCookie({
+        firstName: "Jacob",
+        lastName: "Kowalski",
+        email: "jacob@pottermore.com",
+        password: "random",
+      });
 
-    const response = await client
-      .get("/")
-      .set("Cookie", [csrfCookie, loginCookie]);
+      const response = await client
+        .get(path)
+        .set("Cookie", [csrfCookie, loginCookie]);
 
-    expect(response.status).toBe(302);
-    expect(response.headers.location).toBe("/todos");
-  });
+      expect(response.status).toBe(302);
+      expect(response.headers.location).toBe("/todos");
+    }
+  );
 });
