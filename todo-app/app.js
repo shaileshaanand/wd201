@@ -82,7 +82,10 @@ passport.deserializeUser((id, done) => {
 });
 
 app.get("/", (request, response) => {
-  response.render("index");
+  if (request.user) {
+    return response.redirect("/todos");
+  }
+  return response.render("index");
 });
 
 app.get(
@@ -156,7 +159,19 @@ app.post(
       await Todo.addTodo({ title, dueDate, userId: request.user.id });
       return response.redirect("/todos");
     } catch (error) {
-      console.log(error);
+      if (error.name === "SequelizeValidationError") {
+        if (error.errors[0].path === "title") {
+          request.flash("error", "Title cannot be empty");
+        }
+        if (error.errors[0].path === "dueDate") {
+          request.flash("error", "invalid Due date");
+        }
+        return response.redirect("/todos");
+      }
+      if (error.name === "SequelizeDatabaseError") {
+        request.flash("error", "Invalid date format");
+        return response.redirect("/todos");
+      }
       return response.status(422).send();
     }
   }
@@ -202,6 +217,10 @@ app.get("/signup", (request, response) =>
 app.post("/users", async (request, response) => {
   const { firstName, lastName, email, password } = request.body;
   try {
+    if (!password) {
+      request.flash("error", "Password cannot be empty");
+      return response.redirect("/signup");
+    }
     const user = await User.create({
       firstName,
       lastName,
@@ -215,7 +234,21 @@ app.post("/users", async (request, response) => {
       response.redirect("/todos");
     });
   } catch (error) {
-    console.error(error);
+    if (error.name === "SequelizeUniqueConstraintError") {
+      request.flash("error", "Email already exists");
+    }
+    if (error.name === "SequelizeValidationError") {
+      if (error.errors[0].path === "firstName") {
+        request.flash("error", "First name cannot be empty");
+      }
+      if (error.errors[0].path === "email") {
+        request.flash("error", "Email cannot be empty");
+      }
+      if (error.errors[0].path === "password") {
+        request.flash("error", "Password cannot be empty");
+      }
+    }
+    return response.redirect("/signup");
   }
 });
 
