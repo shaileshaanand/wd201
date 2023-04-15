@@ -13,15 +13,16 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
-    static addTodo({ title, dueDate, completed = false }) {
-      return this.create({ title: title, dueDate, completed });
+    static addTodo({ title, dueDate, completed = false, userId }) {
+      return this.create({ title: title, dueDate, completed, userId });
     }
 
-    static async dueLater() {
+    static async dueLater(userId) {
       return await Todo.findAll({
         where: {
           dueDate: { [Op.gt]: new Date() },
           completed: false,
+          userId,
         },
         order: [
           ["dueDate", "ASC"],
@@ -30,11 +31,12 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
-    static async dueToday() {
+    static async dueToday(userId) {
       return await Todo.findAll({
         where: {
           dueDate: { [Op.eq]: new Date() },
           completed: false,
+          userId,
         },
         order: [
           ["dueDate", "ASC"],
@@ -42,11 +44,12 @@ module.exports = (sequelize, DataTypes) => {
         ],
       });
     }
-    static async overdue() {
+    static async overdue(userId) {
       return await Todo.findAll({
         where: {
           dueDate: { [Op.lt]: new Date() },
           completed: false,
+          userId,
         },
         order: [
           ["dueDate", "ASC"],
@@ -55,10 +58,11 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
-    static async completed() {
+    static async completed(userId) {
       return await Todo.findAll({
         where: {
           completed: true,
+          userId,
         },
         order: [
           ["dueDate", "ASC"],
@@ -67,21 +71,23 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
-    static setCompletionStatus(id, status) {
+    static setCompletionStatus(id, userId, status) {
       return Todo.update(
         { completed: status },
         {
           where: {
-            id: id,
+            id,
+            userId,
           },
         }
       );
     }
 
-    static delete(id) {
+    static delete(id, userId) {
       return this.destroy({
         where: {
           id,
+          userId,
         },
       });
     }
