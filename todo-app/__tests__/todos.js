@@ -39,6 +39,14 @@ const makeTodo = async ({
   });
 };
 
+const formPayload = (payload) => {
+  return Object.entries(payload)
+    .map(([key, value]) =>
+      ![undefined, null].includes(value) ? `${key}=${value}` : ""
+    )
+    .join("&");
+};
+
 const makeUserAndCookie = async (userPayload) => {
   await client
     .post("/users")
@@ -52,7 +60,11 @@ const makeUserAndCookie = async (userPayload) => {
     .post("/session")
     .set("Cookie", csrfCookie)
     .send(
-      `email=${userPayload.email}&password=${userPayload.password}&_csrf=${_csrf}`
+      formPayload({
+        email: userPayload.email,
+        password: userPayload.password,
+        _csrf,
+      })
     );
   const loginCookie = loginresp.headers["set-cookie"].filter(
     (cookie) => cookie.split("=")[0] === "connect.sid"
@@ -218,7 +230,11 @@ describe("Todo Application", function () {
         dueDate: randomPastDate(),
         userId: user.id,
       }),
-      makeTodo({ title: "Code", dueDate: randomFutureDate(), userId: user.id }),
+      makeTodo({
+        title: "Code todo app",
+        dueDate: randomFutureDate(),
+        userId: user.id,
+      }),
     ]);
     const homepage = cheerio.load(
       (await client.get("/todos").set("Cookie", loginCookie)).text
@@ -357,6 +373,29 @@ describe("Todo Application", function () {
       .send(payload);
     expect(response.status).toBe(302);
   });
+
+  it.each(["", null])(
+    "Should not create a new todo using POST request with invalid title (%p)",
+    async (title) => {
+      const [user, loginCookie] = await makeUserAndCookie({
+        firstName: "Jacob",
+        lastName: "Kowalski",
+        email: "jacob@pottermore.com",
+        password: "random",
+      });
+      const payload = {
+        title,
+        dueDate: randomFutureDate(),
+        userId: user.id,
+        _csrf,
+      };
+      const response = await client
+        .post("/todos")
+        .set("Cookie", [csrfCookie, loginCookie])
+        .send(payload);
+      expect(response.status).toBe(302);
+    }
+  );
 
   it("Should create a new todo using POST request", async () => {
     const [user, loginCookie] = await makeUserAndCookie({
@@ -663,5 +702,216 @@ describe("Todo Application", function () {
     }).rejects.toThrow(
       "Instance could not be reloaded because it does not exist anymore (find call returned null)"
     );
+  });
+
+  it.each(["", null])(
+    "Should not create user without firstName (%p)",
+    async (firstName) => {
+      const payload = {
+        firstName,
+        lastName: "Kowalski",
+        email: "jacob@pottermore.com",
+        password: "random",
+        _csrf,
+      };
+      const response = await client
+        .post("/users")
+        .set("Cookie", csrfCookie)
+        .send(formPayload(payload));
+
+      expect(response.status).toBe(302);
+      expect(response.header.location).toBe("/signup");
+      const createdUser = await User.findOne({
+        where: { email: "jacob@pottermore.com" },
+      });
+      expect(createdUser).toBeNull();
+    }
+  );
+
+  it.each(["", null])(
+    "Should not create user without email (%p)",
+    async (email) => {
+      const payload = {
+        firstName: "Jacob",
+        lastName: "Kowalski",
+        email,
+        password: "random",
+        _csrf,
+      };
+      const response = await client
+        .post("/users")
+        .set("Cookie", csrfCookie)
+        .send(formPayload(payload));
+
+      expect(response.status).toBe(302);
+      expect(response.header.location).toBe("/signup");
+      const createdUser = await User.findOne({
+        where: { email: email },
+      });
+      expect(createdUser).toBeNull();
+    }
+  );
+
+  it.each(["", null])(
+    "Should not create user without password (%p)",
+    async (password) => {
+      const payload = {
+        firstName: "Jacob",
+        lastName: "Kowalski",
+        email: "jacob@pottermore.com",
+        password,
+        _csrf,
+      };
+      const response = await client
+        .post("/users")
+        .set("Cookie", csrfCookie)
+        .send(formPayload(payload));
+
+      expect(response.status).toBe(302);
+      expect(response.header.location).toBe("/signup");
+      const createdUser = await User.findOne({
+        where: { email: "jacob@pottermore.com" },
+      });
+      expect(createdUser).toBeNull();
+    }
+  );
+
+  it("Should not re-create user", async () => {
+    const [_, loginCookie] = await makeUserAndCookie({
+      firstName: "Jacob",
+      lastName: "Kowalski",
+      email: "jacob@pottermore.com",
+      password: "random",
+    });
+
+    const response = await client
+      .post("/users")
+      .set("Cookie", [csrfCookie, loginCookie])
+      .send(
+        formPayload({
+          firstName: "Albus",
+          lastName: "Dumbledore",
+          email: "jacob@pottermore.com",
+          password: "random",
+          _csrf,
+        })
+      );
+
+    expect(response.status).toBe(302);
+    expect(response.header.location).toBe("/signup");
+
+    // user count should be 1
+    const users = await User.findAll();
+    expect(users.length).toBe(1);
+  });
+
+  it("Should create a user", async () => {
+    const payload = {
+      firstName: "Jacob",
+      lastName: "Kowalski",
+      email: "jacob@pottermore.com",
+      password: "random",
+      _csrf,
+    };
+    const response = await client
+      .post("/users")
+      .set("Cookie", csrfCookie)
+      .send(
+        Object.entries(payload)
+          .map(([key, value]) => `${key}=${value}`)
+          .join("&")
+      );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe("/todos");
+    const createdUser = await User.findOne({
+      where: { email: "jacob@pottermore.com" },
+    });
+    expect(createdUser).not.toBeNull();
+  });
+
+  it("Should not login user with wrong password", async () => {
+    const [user, _] = await makeUserAndCookie({
+      firstName: "Jacob",
+      lastName: "Kowalski",
+      email: "jacob@pottermore.com",
+      password: "random",
+    });
+
+    const response = await client
+      .post("/session")
+      .set("Cookie", csrfCookie)
+      .send(
+        formPayload({
+          email: user.email,
+          password: "wrong",
+          _csrf,
+        })
+      );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe("/login");
+  });
+
+  it("Should not login user with wrong email", async () => {
+    await makeUserAndCookie({
+      firstName: "Jacob",
+      lastName: "Kowalski",
+      email: "jacob@pottermore.com",
+      password: "random",
+    });
+
+    const response = await client
+      .post("/session")
+      .set("Cookie", csrfCookie)
+      .send(
+        formPayload({
+          email: "tina@pottermore.com",
+          password: "random",
+          _csrf,
+        })
+      );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe("/login");
+  });
+
+  it("Should login user", async () => {
+    const [user, _] = await makeUserAndCookie({
+      firstName: "Jacob",
+      lastName: "Kowalski",
+      email: "jacob@pottermore.com",
+      password: "random",
+    });
+
+    const response = await client
+      .post("/session")
+      .set("Cookie", csrfCookie)
+      .send(
+        formPayload({
+          email: user.email,
+          password: "random",
+          _csrf,
+        })
+      );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe("/todos");
+  });
+
+  it("Should redirect logged in user to /todos", async () => {
+    const [_, loginCookie] = await makeUserAndCookie({
+      firstName: "Jacob",
+      lastName: "Kowalski",
+      email: "jacob@pottermore.com",
+      password: "random",
+    });
+
+    const response = await client
+      .get("/")
+      .set("Cookie", [csrfCookie, loginCookie]);
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe("/todos");
   });
 });
