@@ -9,10 +9,13 @@ const tinycsrf = require("tiny-csrf");
 const passport = require("passport");
 const connectEnsureLogin = require("connect-ensure-login");
 const session = require("express-session");
+const flash = require("connect-flash");
 const LocalStrategy = require("passport-local");
 const bcrypt = require("bcrypt");
 
 const SALT_ROUNDS = 10;
+
+app.set("views", path.join(__dirname, "views"));
 
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
@@ -32,6 +35,12 @@ app.use(
   })
 );
 
+app.use(flash());
+app.use(function (request, response, next) {
+  response.locals.messages = request.flash();
+  next();
+});
+
 app.use(passport.initialize());
 app.use(passport.session());
 passport.use(
@@ -46,7 +55,7 @@ passport.use(
           if (await bcrypt.compare(password, user.password)) {
             return done(null, user);
           }
-          return done("Invalid password");
+          return done(null, false, { message: "Invalid password" });
         })
         .catch((error) => {
           return error;
@@ -213,7 +222,10 @@ app.get("/login", (request, response) => {
 
 app.post(
   "/session",
-  passport.authenticate("local", { failureRedirect: "/login" }),
+  passport.authenticate("local", {
+    failureRedirect: "/login",
+    failureFlash: true,
+  }),
   (request, response) => {
     response.redirect("/todos");
   }
