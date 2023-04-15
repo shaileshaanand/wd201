@@ -107,6 +107,7 @@ app.get(
         dueToday,
         overdue,
         completed,
+        user: request.user,
         csrfToken: request.csrfToken(),
       });
     } else {
