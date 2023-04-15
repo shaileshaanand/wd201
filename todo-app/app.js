@@ -119,7 +119,9 @@ app.get(
   }),
   async function (request, response) {
     try {
-      const todo = await Todo.findByPk(request.params.id);
+      const todo = await Todo.findOne({
+        where: { id: request.params.id, userId: request.user.id },
+      });
       if (todo) {
         return response.json(todo);
       }
@@ -157,6 +159,7 @@ app.put(
     try {
       const affectedCount = await Todo.setCompletionStatus(
         request.params.id,
+        request.user.id,
         request.body.completed
       );
       return response.json(affectedCount === 1);
