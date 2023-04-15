@@ -51,7 +51,7 @@
     <div class="w-[700px] mx-auto">
       <%- include('header.ejs') %>
       <%- include("flasherror.ejs") %>
-      <p class="my-2">Hi, <%= user.firstName %> <a href="/signout" class="text-green-600">Signout</a></p>
+      <p class="mt-2 flex justify-between pr-2">Hi, <%= user.firstName %> <a href="/signout" class="text-green-600">Signout</a></p>
       <form method="post" action="/todos">
         <div class="flex gap-2 py-4">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
