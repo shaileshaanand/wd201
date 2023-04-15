@@ -52,6 +52,9 @@ passport.use(
     (email, password, done) => {
       User.findOne({ where: { email } })
         .then(async (user) => {
+          if (!user) {
+            return done(null, false, { message: "Invalid User" });
+          }
           if (await bcrypt.compare(password, user.password)) {
             return done(null, user);
           }
